@@ -10,7 +10,7 @@
 :root{
  --ink:#2b1166;--ink2:#3a1a85;--pri:#6d28d9;--pri2:#5b21b6;--soft:#f1ecfd;--sun:#f5b301;
  --bg:#f6f4fb;--card:#fff;--tx:#1a1530;--m:#6b6884;--line:#e6e1f3;--red:#c8324b;--grn:#0f8a5f;--amb:#b45309;
- --r1:8px;--r2:14px;--r3:22px;--sh:0 1px 2px #1a15300d,0 8px 24px #1a153010;
+ --r1:10px;--r2:16px;--r3:24px;--sh:0 1px 2px rgba(26,21,48,.04),0 12px 32px -10px rgba(26,21,48,.14);
  --f:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',sans-serif}
 *{box-sizing:border-box;margin:0}
 html{-webkit-text-size-adjust:100%}
@@ -305,6 +305,28 @@ html[data-mode=dark] .dlt b,html[data-mode=dark] .big,html[data-mode=dark] .kt b
 .fin h3{font-size:24px;font-weight:800}.fin p{color:#ffffffe0;margin-top:4px;max-width:36em}
 .fin i{position:absolute;top:-14px;width:8px;height:13px;border-radius:2px;animation:cf 3.2s linear infinite}
 @keyframes cf{to{transform:translateY(190px) rotate(420deg);opacity:0}}
+/* ---- gaya: kartu membulat, bayangan halus, satu warna utama + satu aksen, animasi ringan ---- */
+svg.i{stroke-width:1.75}
+.card,.tw,.cd,.cd2,.kt,.gc,.gk,.dp,.dl,details.add{box-shadow:var(--sh)}
+.card{border-radius:var(--r3);padding:22px}
+.card>h3:first-child{display:flex;align-items:center;gap:10px;font-size:17px}
+.card>h3:first-child::before{content:"";width:5px;height:18px;border-radius:4px;background:var(--sun);flex:none}
+.empty h3::before{display:none}
+.kt{border-radius:var(--r3);padding:18px 20px}
+.kt b{font-size:34px;letter-spacing:-.02em;margin-top:2px}
+.kt small{font-size:12.5px;font-weight:600;color:var(--m)}
+.kt>small:first-child svg{width:30px;height:30px;padding:6px;border-radius:10px;background:var(--soft);color:var(--pri)}
+.btn{border-radius:12px}
+.btn:not(.ghost):not(.red):not(:disabled){box-shadow:0 8px 18px -8px color-mix(in srgb,var(--pri) 70%,transparent)}
+input:focus,select:focus,textarea:focus{box-shadow:0 0 0 4px color-mix(in srgb,var(--pri) 18%,transparent)}
+th{text-transform:uppercase;letter-spacing:.05em;font-size:11.5px}
+.gc,.gk,.kt,.dp,.dl{transition:transform .2s ease,box-shadow .2s ease}
+.gc:hover,.gk:hover,.kt:hover{transform:translateY(-3px);box-shadow:0 16px 34px -12px rgba(26,21,48,.28)}
+.rise{animation:rise .5s cubic-bezier(.2,.7,.2,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+.drw .pg,.cd2 .pg,.dnt .pg{animation:ring .9s ease-out both}
+@keyframes ring{from{stroke-dasharray:0 400}}
+html[data-mode=dark]{--sh:0 12px 30px -12px rgba(0,0,0,.65)}
 /* toast & loader */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 22px;border-radius:12px;display:none;z-index:99;font-weight:600;max-width:calc(100vw - 32px);box-shadow:var(--sh)}
 #toast.err{background:var(--red)}
@@ -477,7 +499,7 @@ async function go(p){
  const m=$('#mn');m.innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';busy(true);
  let h;try{h=await({dash,nilai,hasil,partisip,riwayat,data})[p]()}catch(e){h=fail()}
  busy(false);if(n!==NAV)return;   // abaikan hasil halaman lama jika pengguna sudah pindah
- m.innerHTML=h;window.scrollTo(0,0);if(POST){const f=POST;POST=null;f()}}
+ m.innerHTML=h;window.scrollTo(0,0);[...m.children].forEach((e,i)=>{e.classList.add('rise');e.style.animationDelay=Math.min(i,8)*55+'ms'});if(POST){const f=POST;POST=null;f()}}
 
 /* ---- beranda ---- */
 async function dash(){
