@@ -327,6 +327,21 @@ th{text-transform:uppercase;letter-spacing:.05em;font-size:11.5px}
 .drw .pg,.cd2 .pg,.dnt .pg{animation:ring .9s ease-out both}
 @keyframes ring{from{stroke-dasharray:0 400}}
 html[data-mode=dark]{--sh:0 12px 30px -12px rgba(0,0,0,.65)}
+/* ---- tampilan memuat ---- */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{width:44px;height:44px;border-radius:50%;border:4px solid #ffffff33;border-top-color:var(--sun);animation:spin .8s linear infinite}
+.spin.s{width:16px;height:16px;border-width:2.5px;border-color:var(--line);border-top-color:var(--pri);display:inline-block;vertical-align:-3px;margin-right:8px}
+#sp{position:fixed;inset:0;z-index:90;display:grid;place-items:center;background:linear-gradient(160deg,var(--ink2),var(--ink));color:#fff;text-align:center;padding:24px}
+#sp .spb{display:grid;gap:14px;justify-items:center;max-width:340px}
+#sp b{font-size:19px;font-weight:800}#sp small{color:#d9cffa;min-height:2.6em;line-height:1.4}
+#pl{position:fixed;top:calc(12px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:95;display:flex;align-items:center;gap:10px;background:var(--ink);color:#fff;border-radius:99px;padding:9px 18px 9px 14px;font-weight:600;font-size:14px;box-shadow:var(--sh);max-width:calc(100vw - 24px)}
+#pl .spin{width:18px;height:18px;border-width:2.5px}
+.skl{display:flex;align-items:center;color:var(--m);font-weight:600;margin-bottom:14px}
+.skg{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:14px}.skg .sk{height:92px;margin:0}
+.skg2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px}.skg2 .sk{height:220px;margin:0}
+.go:disabled::before{content:"";width:18px;height:18px;border:2.5px solid #ffffff66;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+html[data-mode=dark] .sk{background:linear-gradient(90deg,#2a2145 25%,#352c52 50%,#2a2145 75%);background-size:200% 100%}
+@media(prefers-reduced-motion:reduce){.spin,.go:disabled::before{animation:spin 2.4s linear infinite!important}}
 /* toast & loader */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 22px;border-radius:12px;display:none;z-index:99;font-weight:600;max-width:calc(100vw - 32px);box-shadow:var(--sh)}
 #toast.err{background:var(--red)}
@@ -354,6 +369,8 @@ html[data-mode=dark]{--sh:0 12px 30px -12px rgba(0,0,0,.65)}
 </style></head>
 <body>
 <div id="ld"></div>
+<div id="sp" role="status" aria-live="polite" hidden><div class="spb"><div class="spin" aria-hidden="true"></div><b id="spm">Memuat…</b><small id="sps"></small></div></div>
+<div id="pl" role="status" aria-live="polite" hidden><i class="spin" aria-hidden="true"></i><span id="plt">Memproses…</span></div>
 <div id="login">
  <section class="lf"><div class="lw">
   <div class="mb" id="ms">Penilaian Kinerja Guru</div>
@@ -437,7 +454,8 @@ document.addEventListener('keydown',e=>{
 function ask(msg,okText,fn,danger){CB=fn;modal(`<h2>${esc(msg)}</h2><div class="act"><button class="btn ghost" onclick="closeM()">Batal</button><button class="btn ${danger?'red':''}" style="${danger?'padding:10px 18px;':''}" onclick="const f=CB;closeM();f&&f()">${esc(okText)}</button></div>`)}
 
 const API_URL='https://script.google.com/macros/s/AKfycbxy8nANRyo5IQqK7kREluaiitm4xJmydnF0TYkgmN3tJBRG-yBOe-eaPUMnyo1kEfA/exec';   // WAJIB: isi dengan alamat web app Apps Script (berakhiran /exec)
-const call=async(a,p)=>{
+const call=async(a,p)=>{pendMulai();try{return await call0(a,p)}finally{pendSelesai()}};
+const call0=async(a,p)=>{
  if(!API_URL){toast('API_URL di index.html belum diisi dengan alamat /exec dari Apps Script.',1);return null}
  try{
   const r=await fetch(API_URL,{method:'POST',body:JSON.stringify({a,t:T,p:p||{}}),redirect:'follow'});
@@ -474,7 +492,7 @@ function isiInfo(d){
 }
 
 /* ---- kerangka ---- */
-async function boot(){
+async function boot0(){
  const d=await call('init');
  if(!d){$('#login').style.display='grid';$('#app').style.display='none';return}
  ME=d.me;CFG=d.cfg;KR=d.kr;
@@ -484,7 +502,7 @@ async function boot(){
   <nav aria-label="Menu utama">${MENU[ME.role].map(p=>`<button data-p="${p}" onclick="go('${p}')">${ico(p)}<span>${MLBL(p,ME.role)}</span></button>`).join('')}</nav>
   <button class="out" onclick="logout()">${ico('out')}<span>Keluar</span></button></aside><main id="mn" tabindex="-1"></main>`;
  if(ME.ganti)return wajibGanti();
- go('dash');
+ return go('dash');
 }
 function logout(s){
  if(T&&!s)call('logout');
@@ -496,7 +514,7 @@ const fail=()=>`<div class="card empty">Data belum bisa ditampilkan.<br><button 
 async function go(p){
  PG=p;const n=++NAV;
  document.querySelectorAll('aside nav button').forEach(b=>{b.classList.toggle('on',b.dataset.p==p);b.toggleAttribute('aria-current',b.dataset.p==p)});
- const m=$('#mn');m.innerHTML='<div class="sk"></div><div class="sk"></div><div class="sk"></div>';busy(true);
+ const m=$('#mn');m.innerHTML=SKEL;busy(true);
  let h;try{h=await({dash,nilai,hasil,partisip,riwayat,data})[p]()}catch(e){h=fail()}
  busy(false);if(n!==NAV)return;   // abaikan hasil halaman lama jika pengguna sudah pindah
  m.innerHTML=h;window.scrollTo(0,0);[...m.children].forEach((e,i)=>{e.classList.add('rise');e.style.animationDelay=Math.min(i,8)*55+'ms'});if(POST){const f=POST;POST=null;f()}}
@@ -1173,6 +1191,28 @@ async function dashSiswaOrtu(d){
  <div class="gal">${Lf.map(([g,i])=>`<div class="gk${sw?' sw':''}" style="--c:${warnaGuru(g.nama)}"><div class="gh"><div class="ga">${esc([...String(g.nama)][0]||'?')}</div><div><b>${esc(g.nama)}</b><small>${esc(g.mapel)}</small>${untuk(g)}</div></div><span class="st ${g.sudah?'ok':'no'}">${g.sudah?'Sudah dinilai':'Belum dinilai'}</span><button class="btn ${g.sudah?'ghost':''}"${buka?'':' disabled'} onclick="formNilai(${i})">${!buka?'Periode ditutup':g.sudah?'Ubah penilaian':sw?'Nilai sekarang':'Beri penilaian'}</button></div>`).join('')}</div>`
  :'<div class="card empty">Belum ada guru yang bisa Anda nilai.<br>Hubungi admin sekolah untuk memeriksa data kelas dan pengampu.</div>')+akhirDash();
 }
+
+/* ---- indikator memuat ---- */
+let PEND=0,LDT=0,LDT8=0,SPT=0,SPT2=0;
+const SKEL='<div class="skl"><i class="spin s"></i>Memuat data…</div><div class="sk" style="height:104px"></div><div class="skg"><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div></div><div class="skg2"><div class="sk"></div><div class="sk"></div></div>';
+function pendMulai(){
+ PEND++;if(PEND!=1)return;
+ clearTimeout(LDT);clearTimeout(LDT8);
+ LDT=setTimeout(()=>{if(PEND>0&&$('#sp').hidden)$('#pl').hidden=false},400);
+ LDT8=setTimeout(()=>{$('#plt').textContent='Masih memproses, mohon tunggu…'},8000);
+}
+function pendSelesai(){
+ PEND=Math.max(0,PEND-1);if(PEND)return;
+ clearTimeout(LDT);clearTimeout(LDT8);$('#pl').hidden=true;$('#plt').textContent='Memproses…';
+}
+function splash(on,msg){
+ const s=$('#sp');clearTimeout(SPT);clearTimeout(SPT2);
+ s.hidden=!on;if(!on){$('#pl').hidden=true;return}
+ $('#spm').textContent=msg||'Memuat…';$('#sps').textContent='';
+ SPT=setTimeout(()=>{$('#sps').textContent='Server sedang bersiap. Ini normal pada akses pertama, mohon tunggu sebentar.'},6000);
+ SPT2=setTimeout(()=>{$('#sps').textContent='Masih memproses. Jika tidak kunjung selesai, muat ulang halaman.'},20000);
+}
+async function boot(){splash(true,'Menyiapkan beranda Anda…');try{await boot0()}finally{splash(false)}}
 
 /* ---- mulai ---- */
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
