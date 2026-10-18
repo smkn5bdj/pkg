@@ -241,6 +241,19 @@ blockquote small{display:block}
 .pgr{display:flex;align-items:center;justify-content:space-between;gap:12px 18px;flex-wrap:wrap;margin-top:12px;font-size:14px}
 .pgr select{width:auto;padding:6px 10px;margin:0 4px}.pgr label{margin:0;font-weight:500;display:inline-flex;align-items:center}
 .pgn{display:flex;align-items:center;gap:10px}
+.hx{background:linear-gradient(135deg,var(--ink2),var(--ink));color:#fff;border-radius:var(--r3);padding:26px 30px;display:flex;gap:24px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px;box-shadow:var(--sh)}
+.hx h2{font-size:28px;font-weight:800;margin:4px 0}.hx p,.hx small{color:#d9cffa}.hx .drw{margin:0}
+.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.kt{background:#fff;border:1px solid var(--line);border-radius:var(--r2);padding:16px;box-shadow:var(--sh)}.kt small{display:block}.kt b{font-size:28px;font-weight:800;line-height:1.2}
+.kt i{display:block;height:6px;background:#ebe7f7;border-radius:9px;margin-top:10px;overflow:hidden}.kt u{display:block;height:100%;background:var(--pri)}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:16px;margin-bottom:16px}
+.lc{display:inline-flex;background:#fef5e1;border:1px solid #f6d58a;color:#7a4a05;border-radius:99px;padding:5px 13px;font-weight:700;font-size:13px;margin:0 6px 6px 0}
+.sb{display:flex;height:16px;border-radius:99px;overflow:hidden;gap:2px}.sb i{display:block}
+.sl{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13px}.sl i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+.rk{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}.rk:last-of-type{border:0}.rk div{flex:1;min-width:0}.rk b{display:block}
+.mdl{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;background:#ebe7f7;color:var(--pri2);flex:none}
+.mdl.m1{background:#f5b301;color:#3b2a00}.mdl.m2{background:#cfd3de;color:#2b3040}.mdl.m3{background:#e0a878;color:#3b2210}
+@media(max-width:820px){.hx{padding:20px}.hx h2{font-size:23px}}
 /* toast & loader */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 22px;border-radius:12px;display:none;z-index:99;font-weight:600;max-width:calc(100vw - 32px);box-shadow:var(--sh)}
 #toast.err{background:var(--red)}
@@ -419,6 +432,7 @@ async function go(p){
 async function dash(){
  const d=await call('dash');if(!d)return fail();
  if(d.jadwal){CFG.jadwal=d.jadwal;CFG.buka=d.jadwal.terbuka?'ya':'tidak'}
+ if(ME.role=='guru')return dashGuru(d);if(ME.role=='kepsek')return dashKepsek(d);
  const g=d.g,h=d.hasil,t=d.tgt,st=d.stat,sisa=t.total-t.sudah,ok=t.total>0&&!sisa,adm=ME.role=='admin';
  const nama=g?g.nama:ME.nama;
  const info=g?[['id','NIP',g.nip],['sch','Sekolah',CFG.sekolah],['bk','Mata pelajaran',g.mapel],['cls','Kelas diampu',d.kelas.join(', ')||'–']]
@@ -915,6 +929,62 @@ function infoPwa(){
   <div class="act"><button class="btn" onclick="closeM()">Tutup</button></div>`);
 }
 async function pasangPwa(){if(!DEFER)return;DEFER.prompt();try{await DEFER.userChoice}catch(e){}DEFER=null;closeM()}
+
+/* ---- beranda guru & kepala sekolah ---- */
+const sapa=()=>{const h=new Date().getHours();return h<11?'Selamat pagi':h<15?'Selamat siang':h<18?'Selamat sore':'Selamat malam'};
+const tglHari=()=>new Date().toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const cincin=(v,txt,cap)=>`<div class="drw" role="img" aria-label="${cap} ${txt}"><svg viewBox="0 0 120 120"><circle class="tr" cx="60" cy="60" r="52"/><circle class="pg" cx="60" cy="60" r="52" transform="rotate(-90 60 60)" stroke-dasharray="${(Math.max(0,Math.min(100,v))*3.267).toFixed(1)} 327"/></svg><div class="dvl"><small>${cap}</small><b>${txt}</b></div></div>`;
+const dlt=v=>v==null?'':Math.abs(v)<.05?'± 0,0 dari tahun lalu':(v>0?'▲ +':'▼ −')+Math.abs(v).toFixed(1)+' dari tahun lalu';
+const kt=(l,v,s,w)=>`<div class="kt"><small>${l}</small><b>${v}</b>${s?`<small>${s}</small>`:''}${w!=null?`<i><u style="width:${Math.max(0,Math.min(100,w))}%"></u></i>`:''}</div>`;
+const ekstrem=k=>{let a=0,z=0;k.forEach((v,i)=>{if(v>k[a])a=i;if(v<k[z])z=i});return `<p class="m" style="margin-top:8px">Terkuat: <b>${esc(KR[a][0])}</b> (${k[a].toFixed(2)}) • Bisa ditingkatkan: <b>${esc(KR[z][0])}</b> (${k[z].toFixed(2)})</p>`};
+const akhirDash=(adm)=>`<div class="act" style="justify-content:flex-start"><button class="btn ghost sm" onclick="formSandi()">Ubah kata sandi</button>${pwaTombol()}</div>`;
+function tugasKartu(t){
+ const ok=t.total>0&&t.sudah>=t.total;
+ return `<button class="dl ${ok?'':'wait'}" style="margin-bottom:16px" onclick="go('nilai')"><span class="dlc">${ico(ok?'ok':'wait')}</span><span class="dlt"><b>${ok?'Semua guru sudah Anda nilai':'Nilai '+(t.total-t.sudah)+' guru lagi'}</b><p>${t.sudah} dari ${t.total} guru sudah dinilai untuk periode ${esc(CFG.tahun)}.</p></span></button>`;
+}
+async function dashGuru(d){
+ const g=d.g,h=d.hasil,t=d.tgt,nama=g?g.nama:ME.nama;
+ let rw=null;if(!d.hasilTertutup){const r=await call('riwayat');if(r&&r.rows.length)rw=r.rows.sort((a,b)=>a.tahun-b.tahun)}
+ const ak=h&&h.akhir!=null?h.akhir:null,dl=rw&&rw.length>1?rw[rw.length-1].akhir-rw[rw.length-2].akhir:null;
+ const bd=[];
+ if(h&&h.lengkap)bd.push('Penilaian lengkap');
+ if(h&&h.kri&&h.kri.every(v=>v>=4))bd.push('Semua aspek ≥ 4');
+ if(dl>0)bd.push('Nilai naik dari tahun lalu');
+ if(rw&&rw.length>=3&&rw.every((x,i)=>!i||x.akhir>rw[i-1].akhir))bd.push('Naik berturut-turut');
+ if(h){const n=Object.keys(PR).reduce((s,r)=>s+(h.per[r].n||0),0);if(n>=10)bd.push('Dinilai '+n+' orang')}
+ if(t.total&&t.sudah>=t.total)bd.push('Tuntas menilai rekan');
+ return bannerPeriode()+`<div class="hx"><div><small>${tglHari()}</small><h2>${sapa()}, ${esc(nama)}</h2><p>${g?'Guru '+esc(g.mapel)+' • ':''}Penilaian Kinerja Guru ${esc(CFG.tahun)}</p>${dl!=null?`<p style="margin-top:6px;font-weight:700">${dlt(dl)}</p>`:''}${h&&h.pred&&ak!=null?`<span class="dst grn" style="margin-top:12px"><i></i>${esc(h.pred)}</span>`:''}</div>${d.hasilTertutup?'<p>Hasil belum dibuka oleh admin.</p>':cincin(ak||0,ak==null?'–':Math.round(ak),'Nilai akhir')}</div>`+
+ (bd.length?`<div style="margin-bottom:16px">${bd.map(x=>`<span class="lc">★ ${esc(x)}</span>`).join('')}</div>`:'')+
+ (h?`<div class="kg">${Object.keys(PR).map(r=>{const x=h.per[r];return kt(PR[r],x.nilai!=null?Math.round(x.nilai):'–',ketPenilai(x),x.nilai)}).join('')}</div>
+ <div class="g2"><div class="card"><h3>Profil 7 aspek</h3>${h.kri?radar(h.kri)+ekstrem(h.kri):'<p class="m" style="margin-top:8px">Belum ada penilaian masuk.</p>'}</div>
+ <div class="card"><h3>Tren nilai akhir</h3>${rw?trendSvg(rw.map(x=>({x:x.tahun,y:x.akhir}))):'<p class="m" style="margin-top:8px">Tren muncul setelah admin mengarsipkan periode.</p>'}
+ ${h.cat.length?'<h4>Kata mereka</h4>'+h.cat.slice(0,3).map(c=>`<blockquote><small>${PR[c.p]}</small>${esc(c.t)}</blockquote>`).join(''):''}</div></div>`:'')+
+ tugasKartu(t)+akhirDash();
+}
+async function dashKepsek(d){
+ const [H,P,R]=await Promise.all([call('hasil'),call('partisipasi'),call('riwayat')]);
+ if(!H)return fail();
+ const L=H.filter(g=>g.akhir!=null).sort((a,b)=>b.akhir-a.akhir),n=L.length,t=d.tgt;
+ const rata=n?L.reduce((s,g)=>s+g.akhir,0)/n:null;
+ const PC=[['Sangat Baik','#0f8a5f'],['Baik Sekali','#6d28d9'],['Baik','#8b5cf6'],['Cukup Baik','#f5b301'],['Kurang Baik','#c8324b']];
+ const sb=PC.map(p=>[p[0],p[1],L.filter(g=>g.pred==p[0]).length]);
+ const kri=n&&L.some(g=>g.kri)?KR.map((_,i)=>{const A=L.filter(g=>g.kri);return A.reduce((s,g)=>s+g.kri[i],0)/A.length}):null;
+ const pt=P||[],tp=pt.length?Math.round(pt.filter(p=>p.sudah>=p.total).length/pt.length*100):null;
+ const per=['guru','ortu','siswa'].map(r=>{const A=pt.filter(p=>p.role==r);return A.length?[PL[r],A.filter(p=>p.sudah>=p.total).length,A.length]:null}).filter(Boolean);
+ const Y={};(R?R.rows:[]).forEach(x=>(Y[x.tahun]=Y[x.tahun]||[]).push(x.akhir));
+ const tren=Object.keys(Y).sort().map(y=>({x:+y,y:Y[y].reduce((a,b)=>a+b,0)/Y[y].length}));
+ const AMB=60,bina=L.filter(g=>g.akhir<AMB).reverse().slice(0,5);
+ const med=i=>`<span class="mdl m${i+1}">${i+1}</span>`;
+ const row=(g,m)=>`<div class="rk">${m}<div><b>${esc(g.nama)}</b><small>${esc(g.mapel)}</small></div><span class="pill">${fmt(g.akhir)}</span></div>`;
+ return bannerPeriode()+`<div class="hx"><div><small>${tglHari()}</small><h2>${sapa()}, ${esc(ME.nama)}</h2><p>Ringkasan Penilaian Kinerja Guru ${esc(CFG.tahun)} • ${esc(CFG.sekolah)}</p>${tren.length>1?`<p style="margin-top:6px;font-weight:700">${dlt(tren[tren.length-1].y-tren[tren.length-2].y).replace('tahun lalu','periode sebelumnya')}</p>`:''}</div>${cincin(rata||0,rata==null?'–':rata.toFixed(1),'Rata-rata')}</div>
+ <div class="kg">${kt('Guru ternilai',n+' / '+H.length,'sudah punya nilai',H.length?n/H.length*100:0)}${kt('Partisipasi',tp==null?'–':tp+'%','akun tuntas menilai',tp)}${kt('Perlu pembinaan',bina.length,'nilai di bawah '+AMB)}${kt('Tugas Anda',t.sudah+' / '+t.total,'guru sudah Anda nilai',t.total?t.sudah/t.total*100:0)}</div>
+ <div class="g2"><div class="card"><h3>Sebaran predikat</h3>${n?`<div class="sb" style="margin-top:12px">${sb.map(p=>p[2]?`<i style="flex:${p[2]};background:${p[1]}" title="${p[0]}: ${p[2]}"></i>`:'').join('')}</div><div class="sl">${sb.map(p=>`<span><i style="background:${p[1]}"></i>${p[0]} <b>${p[2]}</b></span>`).join('')}</div>`:'<p class="m" style="margin-top:8px">Belum ada nilai masuk.</p>'}
+  ${per.length?'<h4>Partisipasi per peran</h4>'+per.map(p=>`<div class="br"><span>${p[0]}</span><i><u style="width:${p[1]/p[2]*100}%"></u></i><em>${p[1]}/${p[2]}</em></div>`).join(''):''}</div>
+ <div class="card"><h3>Profil aspek se-sekolah</h3>${kri?radar(kri)+ekstrem(kri):'<p class="m" style="margin-top:8px">Belum ada data aspek.</p>'}</div></div>
+ <div class="g2"><div class="card"><h3>Peringkat teratas</h3>${L.slice(0,5).map((g,i)=>row(g,med(i))).join('')||'<p class="m">Belum ada data.</p>'}<button class="btn ghost sm" style="margin-top:12px" onclick="go('hasil')">Lihat rekap lengkap</button></div>
+ <div class="card"><h3>Perlu pembinaan</h3>${bina.map(g=>row(g,'<span class="mdl">!</span>')).join('')||'<p class="m" style="margin-top:8px">Tidak ada guru dengan nilai di bawah '+AMB+'.</p>'}
+  <h4>Tren rata-rata sekolah</h4>${tren.length?trendSvg(tren):'<p class="m">Muncul setelah admin mengarsipkan periode.</p>'}</div></div>`+tugasKartu(t)+akhirDash();
+}
 
 /* ---- mulai ---- */
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
