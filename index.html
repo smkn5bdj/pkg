@@ -1127,21 +1127,28 @@ async function dashAdmin(d){
 /* ---- beranda siswa & orang tua ---- */
 const warnaGuru=n=>{let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))%360;return `hsl(${h},52%,42%)`};
 function lanjutNilai(){const i=LIST.findIndex(g=>!g.sudah);i<0?go('nilai'):formNilai(i)}
+let ANAK='semua',ANL=[];
+function setAnak(k){ANAK=k<0||!ANL[k]?'semua':ANL[k].id;go('dash')}
 async function dashSiswaOrtu(d){
- const L=await call('targets');if(!L)return fail();LIST=L;
+ const [L,A]=await Promise.all([call('targets'),call('anak')]);if(!L)return fail();LIST=L;
+ const AN=A&&A.anak?A.anak:[];ANL=AN;if(!AN.some(a=>a.id==ANAK))ANAK='semua';
+ const gm=A&&A.guru?A.guru:{},nmA=id=>(AN.find(a=>a.id==id)||{}).nama||id;
+ const Lf=L.map((g,i)=>[g,i]).filter(([g])=>ANAK=='semua'||(gm[String(g.id).trim()]||[]).includes(ANAK));
+ const untuk=g=>AN.length>1&&ANAK=='semua'&&gm[String(g.id).trim()]?`<small>Untuk: ${gm[String(g.id).trim()].map(x=>esc(nmA(x))).join(', ')}</small>`:'';
  const sw=ME.role=='siswa',t=L.length,n=L.filter(g=>g.sudah).length,sisa=t-n,buka=CFG.buka=='ya',j=CFG.jadwal;
+ const kepala=AN.length?`<div class="card" style="margin-bottom:16px"><small>${sw?'Kelas kamu':'Anak Anda'}</small><div class="kcs" style="margin:8px 0 0">${AN.map(a=>`<span class="kc">${esc(a.nama)}<small>${esc(a.kelas)}</small></span>`).join('')}</div>${AN.length>1?`<div class="tabs" style="margin:12px 0 0"><button class="${ANAK=='semua'?'on':''}" onclick="setAnak(-1)">Semua anak</button>${AN.map((a,k)=>`<button class="${ANAK==a.id?'on':''}" onclick="setAnak(${k})">${esc(a.nama)}</button>`).join('')}</div>`:''}</div>`:'';
  d.tgt={total:t,sudah:n};
  const desak=buka&&sisa>0&&j&&j.mode=='jadwal'&&j.fase=='berjalan'&&j.hariTutup<=3;
  const bintang=t&&t<=10?`<div class="stars" aria-hidden="true">${L.map(g=>`<span class="${g.sudah?'on':'off'}">★</span>`).join('')}</div>`:`<div class="prog"><div class="tr"><u style="width:${t?n/t*100:0}%"></u></div></div>`;
  const bd=[];if(n>=1)bd.push('Penilai Pertama');if(t&&n/t>=.5)bd.push('Separuh Jalan');if(L.some(g=>g.catatan))bd.push('Pemberi Saran');if(t&&!sisa)bd.push('Semua Guru Sudah Dinilai');
  const cf=['#f5b301','#6d28d9','#0f8a5f','#c8324b','#0ea5e9'];
  const fin=t&&!sisa?`<div class="fin"><div aria-hidden="true">${Array.from({length:16},(_,i)=>`<i style="left:${i*6.4}%;background:${cf[i%5]};animation-delay:${(i%7)*.35}s"></i>`).join('')}</div><h3>Terima kasih${sw?'!':', Bapak/Ibu!'}</h3><p>${sw?'Semua gurumu sudah kamu nilai. Masukanmu membantu sekolah jadi lebih baik.':'Semua guru sudah Bapak/Ibu nilai. Masukan Anda sangat berarti bagi kemajuan sekolah.'}</p></div>`:'';
- return atas(d)+(desak?`<div class="note" style="margin:0 0 16px">${sw?'Ayo selesaikan dulu ya,':'Mohon diselesaikan, '}periode ditutup ${j.hariTutup==0?'hari ini':j.hariTutup+' hari lagi'}. Tinggal ${sisa} guru.</div>`:'')+fin+
+ return atas(d)+kepala+(desak?`<div class="note" style="margin:0 0 16px">${sw?'Ayo selesaikan dulu ya,':'Mohon diselesaikan, '}periode ditutup ${j.hariTutup==0?'hari ini':j.hariTutup+' hari lagi'}. Tinggal ${sisa} guru.</div>`:'')+fin+
  (t?`<div class="g2"><div class="card"><h3>${sw?'Tantanganmu':'Progres penilaian'}</h3><div style="margin:12px 0 8px">${bintang}</div><p><b>${n}</b> dari <b>${t}</b> guru sudah dinilai${sisa?`. ${sw?'Tinggal':'Tersisa'} <b>${sisa}</b> lagi.`:'.'}</p>${sw&&bd.length?`<div style="margin-top:12px">${bd.map(x=>`<span class="lc">★ ${x}</span>`).join('')}</div>`:''}</div>
  <div class="card"><h3>Cara menilai</h3><p class="m" style="margin:4px 0 10px">Skala 1 sampai 5:</p><div class="lvs">${[1,2,3,4,5].map(k=>`<span class="lv"><b>${k}</b>${LBL[k]}</span>`).join('')}</div>
  <p class="m" style="margin-top:12px">${sw?'Tenang, penilaianmu rahasia. Guru hanya melihat nilai gabungan, tanpa nama penilai.':'Penilaian bersifat rahasia. Guru hanya melihat nilai gabungan tanpa nama penilai.'}</p></div></div>
  <h3 style="margin:8px 0 12px">${sw?'Guru yang mengajarmu':'Guru yang mengajar di kelas anak Anda'}</h3>
- <div class="gal">${L.map((g,i)=>`<div class="gk${sw?' sw':''}" style="--c:${warnaGuru(g.nama)}"><div class="gh"><div class="ga">${esc([...String(g.nama)][0]||'?')}</div><div><b>${esc(g.nama)}</b><small>${esc(g.mapel)}</small></div></div><span class="st ${g.sudah?'ok':'no'}">${g.sudah?'Sudah dinilai':'Belum dinilai'}</span><button class="btn ${g.sudah?'ghost':''}"${buka?'':' disabled'} onclick="formNilai(${i})">${!buka?'Periode ditutup':g.sudah?'Ubah penilaian':sw?'Nilai sekarang':'Beri penilaian'}</button></div>`).join('')}</div>`
+ <div class="gal">${Lf.map(([g,i])=>`<div class="gk${sw?' sw':''}" style="--c:${warnaGuru(g.nama)}"><div class="gh"><div class="ga">${esc([...String(g.nama)][0]||'?')}</div><div><b>${esc(g.nama)}</b><small>${esc(g.mapel)}</small>${untuk(g)}</div></div><span class="st ${g.sudah?'ok':'no'}">${g.sudah?'Sudah dinilai':'Belum dinilai'}</span><button class="btn ${g.sudah?'ghost':''}"${buka?'':' disabled'} onclick="formNilai(${i})">${!buka?'Periode ditutup':g.sudah?'Ubah penilaian':sw?'Nilai sekarang':'Beri penilaian'}</button></div>`).join('')}</div>`
  :'<div class="card empty">Belum ada guru yang bisa Anda nilai.<br>Hubungi admin sekolah untuk memeriksa data kelas dan pengampu.</div>')+akhirDash();
 }
 
