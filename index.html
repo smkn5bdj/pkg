@@ -342,6 +342,8 @@ html[data-mode=dark]{--sh:0 12px 30px -12px rgba(0,0,0,.65)}
 .go:disabled::before{content:"";width:18px;height:18px;border:2.5px solid #ffffff66;border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
 html[data-mode=dark] .sk{background:linear-gradient(90deg,#2a2145 25%,#352c52 50%,#2a2145 75%);background-size:200% 100%}
 @media(prefers-reduced-motion:reduce){.spin,.go:disabled::before{animation:spin 2.4s linear infinite!important}}
+.bt details{border:1px solid var(--line);border-radius:12px;padding:2px 14px;margin:8px 0;background:var(--card)}
+.bt summary{font-weight:700;padding:11px 0;cursor:pointer}.bt ol{margin:0 0 12px 20px}.bt li{margin:6px 0}.bt p{margin:0 0 12px;color:var(--m)}
 /* toast & loader */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 22px;border-radius:12px;display:none;z-index:99;font-weight:600;max-width:calc(100vw - 32px);box-shadow:var(--sh)}
 #toast.err{background:var(--red)}
@@ -389,7 +391,7 @@ html[data-mode=dark] .sk{background:linear-gradient(90deg,#2a2145 25%,#352c52 50
    <div class="fi"><svg class="i ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
     <input id="p" type="password" placeholder="Kata sandi" autocomplete="current-password" required>
     <button type="button" class="pw" onclick="togglePw()" aria-label="Tampilkan atau sembunyikan kata sandi"><svg class="i" id="pwIc" viewBox="0 0 24 24" aria-hidden="true"></svg></button></div>
-   <div class="row"><label class="rm"><input type="checkbox" id="rm">Ingat jenis akses &amp; username</label><a href="#" class="lp" onclick="event.preventDefault();toast('Hubungi admin sekolah untuk mengatur ulang kata sandi Anda.')">Lupa sandi?</a></div>
+   <div class="row"><label class="rm"><input type="checkbox" id="rm">Ingat jenis akses &amp; username</label><a href="#" class="lp" onclick="event.preventDefault();lupaSandi()">Lupa sandi?</a></div>
    <button class="go" id="lb"><span id="lbt">Masuk</span></button>
   </form>
  </div></section>
@@ -702,7 +704,7 @@ function pengingat(){
  modal(`<h2>Pesan pengingat</h2><p class="m">${x.n} akun belum tuntas. Pilih bagian yang ingin Anda kirim, salin, lalu tempel ke WhatsApp atau grup kelas.${(CFG.url_app||'').trim()?'':' Isi "Tautan aplikasi" di Data master › Pengaturan agar tautan ikut tercantum.'}</p>
   <label for="pk">Kirim untuk</label><select id="pk" onchange="$('#pt').value=pesanPengingat(this.value).teks"><option value="semua">Semua</option>${x.kelas.map(k=>`<option value="kelas:${esc(k)}">Kelas ${esc(k)}</option>`).join('')}${x.adaLain?'<option value="lain">Guru dan kepala sekolah</option>':''}</select>
   <label for="pt">Pesan</label><textarea id="pt" class="msg" readonly>${esc(x.teks)}</textarea>
-  <div class="act"><button class="btn ghost" onclick="closeM()">Tutup</button><button class="btn" onclick="salinPesan()">Salin pesan</button></div>`);
+  <div class="act"><button class="btn ghost" onclick="closeM()">Tutup</button><button class="btn ghost" onclick="bukaWa($('#pt').value)">Buka WhatsApp</button><button class="btn" onclick="salinPesan()">Salin pesan</button></div>`);
 }
 async function salinPesan(){
  const t=$('#pt');t.select();
@@ -1010,7 +1012,7 @@ function unduhLog(){unduhCsv('log-aktivitas-pkg.csv',[['Waktu','Pelaku','Aksi','
 let DEFER=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();DEFER=e});
 const STANDALONE=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
-const pwaTombol=()=>'<button class="btn ghost sm" style="margin-left:8px" onclick="formTampil()">Tampilan</button>'+(STANDALONE()?'':'<button class="btn ghost sm" style="margin-left:8px" onclick="infoPwa()">Pasang di HP</button>');
+const pwaTombol=()=>'<button class="btn ghost sm" style="margin-left:8px" onclick="formTampil()">Tampilan</button><button class="btn ghost sm" style="margin-left:8px" onclick="bantuan()">Bantuan</button>'+(STANDALONE()?'':'<button class="btn ghost sm" style="margin-left:8px" onclick="infoPwa()">Pasang di HP</button>');
 function infoPwa(){
  modal(`<h2>Pasang di layar utama HP</h2><p class="m">Dengan ikon di layar utama, aplikasi terbuka seperti aplikasi biasa tanpa mengetik alamat.</p>
   ${DEFER?'<div class="act" style="justify-content:flex-start"><button class="btn" onclick="pasangPwa()">Pasang sekarang</button></div>':''}
@@ -1213,6 +1215,48 @@ function splash(on,msg){
  SPT2=setTimeout(()=>{$('#sps').textContent='Masih memproses. Jika tidak kunjung selesai, muat ulang halaman.'},20000);
 }
 async function boot(){splash(true,'Menyiapkan beranda Anda…');try{await boot0()}finally{splash(false)}}
+
+/* ---- WhatsApp, lupa sandi, bantuan ---- */
+const WA_ADMIN='081549267404';   // nomor WhatsApp admin sekolah, contoh: '081234567890' (boleh dikosongkan)
+const waNo=()=>WA_ADMIN.replace(/\D/g,'').replace(/^0/,'62');
+function bukaWa(t,no){
+ if(String(t).length>1500){
+  try{navigator.clipboard.writeText(t)}catch(e){}
+  toast('Pesan terlalu panjang untuk dibuka langsung, jadi sudah disalin. Tempel di WhatsApp. Atau pilih per kelas.',1);
+  return window.open('https://wa.me/','_blank','noopener')}
+ window.open('https://wa.me/'+(no||'')+'?text='+encodeURIComponent(t),'_blank','noopener');
+}
+async function salinLp(){
+ const t=$('#lp');t.select();
+ try{await navigator.clipboard.writeText(t.value);toast('Pesan disalin')}catch(e){try{document.execCommand('copy');toast('Pesan disalin')}catch(e2){toast('Tekan Ctrl+C untuk menyalin teks yang terpilih',1)}}
+}
+function lupaSandi(){
+ const r=$('#r').value,u=$('#u').value.trim(),no=waNo();
+ const t='Halo Admin, saya lupa kata sandi aplikasi Penilaian Kinerja Guru'+(PL[r]?'. Jenis akses: '+PL[r]:'')+(u?', username: '+u:'')+'. Mohon bantuan mengatur ulang kata sandi. Terima kasih.';
+ modal(`<h2>Lupa kata sandi</h2><p class="m">Kata sandi tidak bisa dilihat kembali, tetapi admin sekolah dapat mengatur ulang. Setelah masuk dengan sandi sementara dari admin, Anda akan diminta membuat sandi baru.</p>
+  <label for="lp">Pesan untuk admin</label><textarea id="lp" class="msg" style="min-height:120px" readonly>${esc(t)}</textarea>
+  ${no?'':'<p class="note">Nomor WhatsApp admin belum diisi di aplikasi. Salin pesan di atas lalu kirim ke admin sekolah.</p>'}
+  <div class="act"><button class="btn ghost" onclick="closeM()">Tutup</button><button class="btn ghost" onclick="salinLp()">Salin pesan</button>${no?`<button class="btn" onclick="bukaWa($('#lp').value,'${no}')">Kirim lewat WhatsApp</button>`:''}</div>`);
+}
+function tanyaAdmin(){bukaWa('Halo Admin, saya butuh bantuan menggunakan aplikasi Penilaian Kinerja Guru. Nama: '+ME.nama+' ('+PL[ME.role]+').',waNo())}
+function bantuan(){
+ const r=ME.role,adm=r=='admin',B=['atasan','rekan','ortu','siswa'].map(x=>PR[x]+' '+CFG['bobot_'+x]+'%').join(', ');
+ const P={
+  admin:['Langkah menyiapkan penilaian',['Buka Data master › Pengaturan: isi nama sekolah, tahun, jadwal buka dan tutup, serta bobot penilai.','Isi data Guru, Siswa, dan Pengampu kelas (bisa impor dari Excel).','Buat akun di tab Pengguna. Akun baru wajib mengganti kata sandi saat masuk pertama.','Bagikan username dan kata sandi awal ke pemilik akun.','Pantau menu Partisipasi dan kirim pesan pengingat ke yang belum menilai.','Setelah periode selesai, buka Riwayat lalu Arsipkan. Baru setelah itu ganti tahun di Pengaturan.']],
+  kepsek:['Panduan kepala sekolah',['Menu Nilai guru: beri penilaian untuk setiap guru (skala 1–5 pada tujuh aspek).','Rekap hasil: lihat nilai akhir, buka Detail untuk rapor, lalu cetak atau unduh CSV.','Partisipasi: lihat siapa yang belum menilai dan buat pesan pengingat.','Riwayat: bandingkan nilai dari tahun ke tahun.']],
+  guru:['Panduan guru',['Menu Nilai rekan: nilai rekan sejawat Anda (skala 1–5 pada tujuh aspek).','Hasil saya: lihat nilai Anda dari atasan, rekan, orang tua, dan siswa, jika admin sudah membukanya.','Riwayat saya: lihat tren nilai dari tahun ke tahun.','Di Detail hasil ada tombol Cetak rapor, bisa disimpan sebagai PDF.']],
+  ortu:['Panduan orang tua',['Tekan Mulai menilai di beranda, atau buka menu Nilai guru.','Pilih guru, beri nilai 1–5 pada tujuh aspek. Catatan bersifat opsional.','Jika punya beberapa anak, pilih tab nama anak untuk menyaring guru.','Penilaian bisa diubah selama periode masih dibuka.']],
+  siswa:['Panduan siswa',['Tekan Mulai menilai di beranda, atau buka menu Nilai guru.','Pilih guru, beri nilai 1–5 pada tujuh aspek. Catatan bersifat opsional.','Jujur saja ya, penilaianmu rahasia dan guru tidak tahu siapa yang menilai.','Penilaian bisa diubah selama periode masih dibuka.']]}[r];
+ const F=[['Saya lupa kata sandi','Hubungi admin sekolah. Admin dapat mengatur ulang di Data master › Pengguna › Atur sandi, lalu Anda diminta membuat sandi baru.'],
+  ['Bisakah penilaian diubah?','Bisa, selama periode penilaian masih dibuka. Buka kartu guru lalu pilih Ubah penilaian.'],
+  ['Apakah guru tahu siapa yang menilai?','Tidak. Guru hanya melihat nilai gabungan dan catatan tanpa nama. Nilai rekan, orang tua, atau siswa baru ditampilkan jika penilainya minimal '+(CFG.min_penilai||1)+' orang.'],
+  ['Bagaimana nilai akhir dihitung?','Skala 1–5 diubah ke 0–100, lalu digabung dengan bobot: '+B+'.'],
+  ...(adm?[]:[['Daftar guru kosong atau ada guru yang tidak muncul','Hubungi admin sekolah. Kemungkinan data kelas atau pengampu belum diisi.']]),
+  ['Bagaimana memasang di HP?','Tekan Pasang di HP di beranda, atau buka menu browser lalu pilih Tambahkan ke layar utama.']];
+ const no=waNo(),t='Halo Admin, saya butuh bantuan menggunakan aplikasi Penilaian Kinerja Guru. Nama: '+ME.nama+' ('+PL[r]+').';
+ modal(`<h2>Bantuan</h2><div class="bt"><details open><summary>${P[0]}</summary><ol>${P[1].map(x=>`<li>${esc(x)}</li>`).join('')}</ol></details>${F.map(f=>`<details><summary>${esc(f[0])}</summary><p>${esc(f[1])}</p></details>`).join('')}</div>
+  <div class="act"><button class="btn ${no&&!adm?'ghost':''}" onclick="closeM()">Tutup</button>${no&&!adm?`<button class="btn" onclick="tanyaAdmin()">Tanya admin lewat WhatsApp</button>`:''}</div>`);
+}
 
 /* ---- mulai ---- */
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
