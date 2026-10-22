@@ -344,6 +344,19 @@ html[data-mode=dark] .sk{background:linear-gradient(90deg,#2a2145 25%,#352c52 50
 @media(prefers-reduced-motion:reduce){.spin,.go:disabled::before{animation:spin 2.4s linear infinite!important}}
 .bt details{border:1px solid var(--line);border-radius:12px;padding:2px 14px;margin:8px 0;background:var(--card)}
 .bt summary{font-weight:700;padding:11px 0;cursor:pointer}.bt ol{margin:0 0 12px 20px}.bt li{margin:6px 0}.bt p{margin:0 0 12px;color:var(--m)}
+.kop,.ttd,.cet{display:none}
+.rp .kop,.rp .ttd{display:flex}.rp .cet{display:block}
+.kop{align-items:center;gap:16px;border-bottom:3px double var(--pri);padding-bottom:12px;margin-bottom:16px}
+.kop img{width:64px;height:64px;object-fit:contain}.kop b{display:block;font-size:19px;text-transform:uppercase;letter-spacing:.02em}.kop span{color:var(--m);font-size:14px}
+.ttd{justify-content:space-between;gap:24px;margin-top:34px;break-inside:avoid}.ttd>div{flex:1;text-align:center}
+.ttd .ln{height:64px}.ttd b{display:block;border-top:1px solid var(--tx);padding-top:4px;max-width:240px;margin:0 auto}.ttd small{display:block}
+.cet{text-align:right;color:var(--m);font-size:12px;margin-top:14px}
+.kg2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kd{border:1.5px dashed #8a87a3;border-radius:10px;padding:12px 14px;break-inside:avoid;font-size:13px}.kd b{display:block;font-size:14px}.kd small{display:block}
+.kn{font-size:16px;font-weight:800;margin-top:8px}.kr{color:var(--m);margin-bottom:6px}
+.kd dl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:6px 0}.kd dt{color:var(--m)}.kd dd{margin:0;font:700 15px ui-monospace,Consolas,monospace;overflow-wrap:anywhere}
+@media(max-width:560px){.kg2{grid-template-columns:1fr}}
+@media print{.kop,.ttd{display:flex}.cet{display:block}html[data-mode=dark]{--card:#fff;--tx:#000;--m:#555;--line:#ddd;--soft:#f3f3f3}.kd,.ttd,.kop{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 /* toast & loader */
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 22px;border-radius:12px;display:none;z-index:99;font-weight:600;max-width:calc(100vw - 32px);box-shadow:var(--sh)}
 #toast.err{background:var(--red)}
@@ -623,11 +636,11 @@ function radar(k){
   ${KR.map((q,i)=>{const p=pt(i,5,R+16),a=p[0]<cx-4?'end':p[0]>cx+4?'start':'middle';return `<text x="${p[0].toFixed(1)}" y="${(p[1]+4).toFixed(1)}" text-anchor="${a}">${esc(q[0].replace('Berorientasi ',''))}</text>`}).join('')}</svg>`;
 }
 function raporHtml(g){
- return `<div class="pr"><b>Rapor Penilaian Kinerja Guru ${esc(CFG.tahun)}</b><p>${esc(CFG.sekolah)}${g.nip?' • NIP '+esc(g.nip):''}</p></div><div class="dh"><div class="ring" style="--v:${Number(g.akhir)||0}"><b>${fmt(g.akhir)}</b></div><div><h2>${esc(g.nama)}</h2><p class="m">${esc(g.mapel)} • ${esc(g.pred)}</p></div></div>
+ return kopHtml('Rapor Penilaian Kinerja Guru Tahun '+esc(CFG.tahun)+(g.nip?' • NIP '+esc(g.nip):''))+`<div class="dh"><div class="ring" style="--v:${Number(g.akhir)||0}"><b>${fmt(g.akhir)}</b></div><div><h2>${esc(g.nama)}</h2><p class="m">${esc(g.mapel)} • ${esc(g.pred)}</p></div></div>
  ${catatLengkap(g)}
  <h4>Nilai per unsur penilai (0–100)</h4>`+Object.keys(PR).map(r=>{const x=g.per[r];return `<div class="br"><span>${PR[r]} <small>bobot ${g.B[r]}%${x.sembunyi?' • belum cukup penilai (min. '+CFG.min_penilai+')':''}</small></span><i><u style="width:${x.nilai!=null?x.nilai:0}%"></u></i><em>${fmt(x.nilai)}</em></div>`}).join('')+
  '<h4>Nilai per aspek (skala 1–5)</h4>'+(g.kri?radar(g.kri)+KR.map((k,j)=>`<div class="br"><span>${esc(k[0])}</span><i><u style="width:${g.kri[j]*20}%"></u></i><em>${g.kri[j].toFixed(2)}</em></div>`).join(''):'<p class="m">Belum ada penilaian masuk.</p>')+
- (g.cat.length?'<h4>Catatan (tanpa nama penilai)</h4>'+g.cat.map(c=>`<blockquote><small>${PR[c.p]}</small>${esc(c.t)}</blockquote>`).join(''):'');
+ (g.cat.length?'<h4>Catatan (tanpa nama penilai)</h4>'+g.cat.map(c=>`<blockquote><small>${PR[c.p]}</small>${esc(c.t)}</blockquote>`).join(''):'')+ttdHtml(g);
 }
 function detail(i){
  const g=HL[i];
@@ -820,7 +833,7 @@ async function data(){
  const inp=f=>`<div><label for="f_${f}">${FL[f]}</label>${f=='role'?`<select id="f_${f}">${Object.keys(PL).map(r=>`<option value="${r}">${PL[r]}</option>`).join('')}</select>`:`<input id="f_${f}" ${f=='password'?'type="password" autocomplete="new-password"':f.startsWith('bobot')?'type="number" min="0" max="100"':''}>`}</div>`;
  return head('Data master',HINT[TAB]||'')+tabs+
   `<details class="add"><summary>Tambah ${TB[TAB].toLowerCase()}</summary><div class="af">${F.map(inp).join('')}<button class="btn" onclick="tambah()">Tambah</button></div></details>
-  <div class="tool"><input class="srch" type="search" placeholder="Cari di tabel ${TB[TAB].toLowerCase()}" oninput="cariTabel(this.value)" aria-label="Cari data"><button class="btn ghost" onclick="formImpor()">Impor dari Excel</button>${TAB=='Users'?'<button class="btn ghost" onclick="formWajib()">Wajibkan ganti sandi…</button>':''}</div>
+  <div class="tool"><input class="srch" type="search" placeholder="Cari di tabel ${TB[TAB].toLowerCase()}" oninput="cariTabel(this.value)" aria-label="Cari data"><button class="btn ghost" onclick="formImpor()">Impor dari Excel</button>${TAB=='Users'?'<button class="btn" onclick="formAkunOtomatis()">Buat akun otomatis</button><button class="btn ghost" onclick="formWajib()">Wajibkan ganti sandi…</button>':''}</div>
   <div class="tw"><table><thead><tr>${F.map(f=>`<th>${FL[f]}</th>`).join('')}<th></th></tr></thead><tbody id="tb">${L.map((r,i)=>`<tr data-n="${esc(F.map(f=>r[f]).join(' ').toLowerCase())}">${F.map(f=>`<td>${esc(r[f])}</td>`).join('')}<td style="white-space:nowrap">${TAB=='Users'?`${r.wajib_ganti=='ya'?'<small>belum ganti sandi</small> ':''}<button class="btn ghost sm" onclick="formReset(${i})">Atur sandi</button> `:''}<button class="btn red" onclick="hapus(${i})">Hapus</button></td></tr>`).join('')||`<tr><td colspan="9" class="m">Belum ada data. Buka "Tambah" di atas atau impor dari Excel.</td></tr>`}</tbody></table></div><div id="pgr"></div>`;
 }
 const cariTabel=q=>pgCari(q);
@@ -951,7 +964,7 @@ async function doImpor(){
  if(TAB=='Users'&&baru.length&&d.tambah){
   PWL=baru.map(x=>[x.o.username,x.o.nama,PL[x.o.role],x.o.password]);
   modal(`<h2>Simpan daftar kata sandi awal</h2><p class="m">${baru.length} akun memakai kata sandi otomatis. Daftar ini <b>hanya tampil sekali</b>. Unduh dan bagikan ke pemilik akun. Mereka diwajibkan menggantinya saat masuk pertama.</p>
-   <div class="act"><button class="btn ghost" onclick="PWL=null;closeM();go('data')">Lewati</button><button class="btn" onclick="unduhPwl()">Unduh daftar</button></div>`);
+   <div class="act"><button class="btn ghost" onclick="PWL=null;closeM();go('data')">Lewati</button><button class="btn ghost" onclick="cetakKartu(PWL.map(r=>({username:r[0],nama:r[1],peran:r[2],sandi:r[3],kelas:''})))">Cetak kartu</button><button class="btn" onclick="unduhPwl()">Unduh daftar</button></div>`);
  }else SISA();
 }
 async function simpanCfg(){
@@ -1256,6 +1269,65 @@ function bantuan(){
  const no=waNo(),t='Halo Admin, saya butuh bantuan menggunakan aplikasi Penilaian Kinerja Guru. Nama: '+ME.nama+' ('+PL[r]+').';
  modal(`<h2>Bantuan</h2><div class="bt"><details open><summary>${P[0]}</summary><ol>${P[1].map(x=>`<li>${esc(x)}</li>`).join('')}</ol></details>${F.map(f=>`<details><summary>${esc(f[0])}</summary><p>${esc(f[1])}</p></details>`).join('')}</div>
   <div class="act"><button class="btn ${no&&!adm?'ghost':''}" onclick="closeM()">Tutup</button>${no&&!adm?`<button class="btn" onclick="tanyaAdmin()">Tanya admin lewat WhatsApp</button>`:''}</div>`);
+}
+
+/* ---- akun otomatis, kartu akun, rapor resmi ---- */
+const NAMA_KEPSEK='',NIP_KEPSEK='',KOTA_TTD='';   // untuk kolom tanda tangan rapor (boleh dikosongkan)
+const tglCetak=()=>new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+const kopHtml=j=>`<div class="kop">${LOGO_URL?`<img src="${esc(LOGO_URL)}" alt="">`:''}<div><b>${esc(CFG.sekolah)}</b><span>${j}</span></div></div>`;
+const ttdHtml=g=>`<div class="ttd"><div><p>Guru yang dinilai</p><div class="ln"></div><b>${esc(g.nama)}</b>${g.nip?`<small>NIP ${esc(g.nip)}</small>`:''}</div><div><p>${KOTA_TTD?esc(KOTA_TTD)+', ':''}${tglCetak()}<br>Kepala Sekolah</p><div class="ln"></div><b>${esc(NAMA_KEPSEK)||'(.....................)'}</b>${NIP_KEPSEK?`<small>NIP ${esc(NIP_KEPSEK)}</small>`:''}</div></div><p class="cet">Dicetak pada ${tglCetak()}</p>`;
+let AO=null;
+const sama=(a,b)=>String(a).trim()==String(b).trim();
+async function formAkunOtomatis(){
+ const [S,G,U]=await Promise.all([call('list',{t:'Siswa'}),call('list',{t:'Guru'}),call('list',{t:'Users'})]);
+ if(!S||!G||!U)return;AO={S,G,U};
+ const cb=(id,t)=>`<label style="display:flex;gap:10px;align-items:center;font-weight:500"><input type="checkbox" id="${id}" checked style="width:18px;height:18px;padding:0" onchange="hitungAkun()">${t}</label>`;
+ modal(`<h2>Buat akun otomatis</h2><p class="m">Akun dibuat dari data Siswa dan Guru yang sudah ada. Yang sudah punya akun dilewati. Kata sandi awal dibuat acak dan wajib diganti saat masuk pertama.</p>
+  ${cb('ao_siswa','Siswa <small>(username = ID siswa)</small>')}${cb('ao_ortu','Orang tua <small>(username = awalan + ID siswa)</small>')}
+  <label for="ao_pre">Awalan username orang tua</label><input id="ao_pre" value="ortu" oninput="hitungAkun()" style="max-width:160px">
+  ${cb('ao_guru','Guru <small>(username = NIP, atau ID jika NIP kosong)</small>')}
+  <div id="aop" class="note" style="margin-top:14px"></div>
+  <div class="act"><button class="btn ghost" onclick="closeM()">Batal</button><button class="btn" id="aob" onclick="buatAkun()">Buat akun</button></div>`);
+ hitungAkun();
+}
+function rancangAkun(){
+ const {S,G,U}=AO,ada=new Set(U.map(u=>String(u.username).trim().toLowerCase())),L=[],c={siswa:0,ortu:0,guru:0};let lewat=0;
+ const pre=($('#ao_pre').value||'ortu').trim().toLowerCase(),punya=(role,id)=>U.some(u=>String(u.role).trim()==role&&String(u.ref_id).split(',').some(x=>sama(x,id)));
+ const tambah=(un,nama,role,ref,kelas)=>{un=String(un).trim().toLowerCase();if(!un||!String(nama).trim())return;
+  if(ada.has(un)||punya(role,ref)){lewat++;return}ada.add(un);c[role]++;L.push({username:un,nama:String(nama).trim(),role,ref_id:String(ref).trim(),kelas:kelas||''})};
+ if($('#ao_siswa').checked)S.forEach(s=>tambah(s.id,s.nama,'siswa',s.id,s.kelas));
+ if($('#ao_ortu').checked)S.forEach(s=>tambah(pre+String(s.id).trim(),'Orang tua '+s.nama,'ortu',s.id,s.kelas));
+ if($('#ao_guru').checked)G.forEach(g=>tambah(String(g.nip||'').trim()||g.id,g.nama,'guru',g.id,''));
+ return {L,c,lewat};
+}
+function hitungAkun(){
+ const r=rancangAkun();$('#aob').disabled=!r.L.length;
+ $('#aop').innerHTML='Akan dibuat: <b>'+r.L.length+'</b> akun (siswa '+r.c.siswa+', orang tua '+r.c.ortu+', guru '+r.c.guru+'). Dilewati karena sudah ada: <b>'+r.lewat+'</b>.'+(r.L.length>300?' Jumlahnya banyak, prosesnya bisa beberapa menit.':'');
+}
+async function buatAkun(){
+ const {L}=rancangAkun();if(!L.length)return;
+ L.forEach(x=>x.sandi=sandiAcak());
+ const jadi=[];let gagal=false;
+ for(let i=0;i<L.length;i+=100){
+  const b=L.slice(i,i+100);
+  modal(`<h2>Membuat akun…</h2><div class="prog"><div class="tr"><u style="width:${i/L.length*100}%"></u></div><b>${i} / ${L.length}</b></div><p class="m">Jangan tutup halaman ini sampai selesai.</p>`);
+  const d=await call('saveBulk',{t:'Users',rows:b.map(x=>({username:x.username,password:x.sandi,nama:x.nama,role:x.role,ref_id:x.ref_id}))});
+  if(!d){gagal=true;break}
+  b.forEach(x=>jadi.push(x));
+ }
+ AKUN=jadi.map(x=>({username:x.username,nama:x.nama,peran:PL[x.role],sandi:x.sandi,kelas:x.kelas}));
+ modal(`<h2>${gagal?'Proses terhenti':'Akun selesai dibuat'}</h2><p class="m"><b>${AKUN.length}</b> akun berhasil dibuat${gagal?'. Proses terhenti karena gangguan. Akun yang sudah jadi tetap tersimpan, jalankan lagi untuk sisanya.':'.'} Kata sandi awal <b>hanya tampil sekali</b>, jadi cetak atau unduh sekarang.</p>
+  <div class="act"><button class="btn ghost" onclick="closeM();go('data')">Selesai</button><button class="btn ghost" onclick="unduhAkun()">Unduh CSV</button><button class="btn" onclick="cetakKartu(AKUN)">Cetak kartu akun</button></div>`);
+}
+function unduhAkun(){unduhCsv('akun-baru.csv',[['Username','Nama','Peran','Kelas','Kata sandi awal'],...AKUN.map(x=>[x.username,x.nama,x.peran,x.kelas,x.sandi])])}
+function cetakKartu(L){
+ if(!L||!L.length)return toast('Belum ada akun untuk dicetak',1);
+ const G={},url=(CFG.url_app||'').trim();
+ L.forEach(x=>{const k=x.kelas?'Kelas '+x.kelas:x.peran;(G[k]=G[k]||[]).push(x)});
+ modal('<h2 class="np">Kartu akun</h2><p class="m np">'+L.length+' kartu, dikelompokkan per kelas. Klik Cetak, lalu gunting sepanjang garis putus-putus.</p>'+
+  Object.keys(G).sort((a,b)=>a.localeCompare(b,'id',{numeric:true})).map(k=>`<section class="rp"><h3 style="margin-bottom:10px">${esc(k)} <small>(${G[k].length} kartu)</small></h3><div class="kg2">${G[k].sort((a,b)=>a.peran.localeCompare(b.peran)||a.nama.localeCompare(b.nama,'id')).map(x=>
+   `<div class="kd"><b>${esc(CFG.sekolah)}</b><small>Penilaian Kinerja Guru ${esc(CFG.tahun)}</small><div class="kn">${esc(x.nama)}</div><div class="kr">${esc(x.peran)}${x.kelas?' • '+esc(x.kelas):''}</div><dl><dt>Username</dt><dd>${esc(x.username)}</dd><dt>Kata sandi</dt><dd>${esc(x.sandi)}</dd></dl>${url?`<small>${esc(url)}</small>`:''}<small>Ganti kata sandi saat masuk pertama.</small></div>`).join('')}</div></section>`).join('')+
+  '<div class="act"><button class="btn ghost" onclick="closeM()">Tutup</button><button class="btn" onclick="window.print()">Cetak</button></div>');
 }
 
 /* ---- mulai ---- */
